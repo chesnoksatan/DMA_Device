@@ -5,11 +5,13 @@
 #include <linux/ioctl.h>
 #include <linux/dma-mapping.h>
 
+#include "dma.h"
+
 #define DEVICE_NAME "DMA_TEST"// Имя создаваемого устройства, расположенного в /dev/
 #define BUF_LEN 80            // Длина буфера
 
 #define SIZE 1024 * 1024 * 4  // 4Mb на один буфер
-#define ARR_SIZE 256          // 1Gb на весь буфер
+#define ARR_SIZE 1//256          // 1Gb на весь буфер
 
 static int Device_Open = 0;
 static int MAJOR = 0;
@@ -17,10 +19,12 @@ static int MAJOR = 0;
 static char msg[BUF_LEN];
 static char *msg_Ptr;
 
-static char *kbuf[ARR_SIZE];
+static void *kbuf[ARR_SIZE];
 static dma_addr_t handle[ARR_SIZE];
 
 static int counter;
+
+static int sin = -1;
 
 // Определение функций, поддерживаемых устройствоом
 // Инициализация устройства
@@ -60,9 +64,11 @@ static int __init dma_test(void)
       {
         printk(KERN_ALERT "The allocation failed");
         //return 0;
-      }
+      } else
     printk(KERN_INFO "DMA in normal state. Handle = %lld", handle[counter]);
     }
+
+    printk(KERN_INFO "");
 
     return 0;
 }
@@ -133,20 +139,53 @@ static ssize_t dma_write(struct file *filp, const char *buff, size_t len,
 static long dma_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
   int ret = 0;
-   /*switch (cmd) {
-     case :
-          ret = ;
+   switch (cmd) {
+     case DMA_WRITE_SIN:
+          ret = write_sin_dma((struct gen_sin *)arg);
           break;
-     case :
+     /*case :
           ret = ;*/
     /*
         Для других функций
     */
-     /*default:
+     default:
           return -EINVAL;
-   }*/
+   }
 
    return ret;
+}
+
+int write_sin_dma ( struct gen_sin *users_sin){
+
+  for ( counter = 0; counter < users_sin->byte; counter++){
+    kbuf[counter] = users_sin->A * sinus();
+    //double A, w, t
+  }
+
+  return 0;
+}
+
+int sinus( int sinu ){
+    switch (sin) {
+      case -1: {
+        sin += 1;
+        return -1;
+        break;
+      }
+      case 0: {
+        sin += 1;
+        return 0;
+        break;
+      }
+      case 1: {
+        sin = -1;
+        return 1;
+        break;
+      }
+      default:
+           return -EINVAL;
+    }
+    return 0;
 }
 
 module_init(dma_test);
